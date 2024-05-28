@@ -2,7 +2,6 @@ import socketserver
 import os
 import re
 
-# Function to load database with validation and counting
 def load_database():
     db = []
     name_set = set()
@@ -25,8 +24,11 @@ def load_database():
                     print(f"Record skipped [customer already exists]: {line.strip()}")
                     continue
 
+                #age can be null or empty well
                 age = parts[1].strip()
-                if not age.isdigit() or not (1 <= int(age) <= 120):
+                if age == "":
+                    pass
+                elif not age.isdigit() or not (1 <= int(age) <= 120):
                     print(f"Record skipped [invalid age field]: {line.strip()}")
                     continue
 
@@ -43,9 +45,9 @@ def load_database():
                 db.append((name, age, address, phone))
                 name_set.add(name)
 
+    print(f"Database loaded with {len(db)} record(s) \n\nPython Server is now running...")
     return db
 
-# Handler class for server requests
 class DatabaseRequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip().decode()
@@ -75,8 +77,22 @@ class DatabaseRequestHandler(socketserver.BaseRequestHandler):
                 return f"{customer[0]}|{customer[1]}|{customer[2]}|{customer[3]}"
         return "Customer not found"
 
+    def validate_customer(self, name, age, address, phone):
+        if not name.strip():
+            return "Invalid name"
+        if not age.isdigit() or not (1 <= int(age) <= 120):
+            return "Invalid age"
+        if not all(c.isalnum() or c in ' .-' for c in address):
+            return "Invalid address"
+        if phone and not (re.match(r'^\d{3} \d{3}-\d{4}$', phone) or re.match(r'^\d{3}-\d{4}$', phone)):
+            return "Invalid phone"
+        return "Valid"
+
     def add_customer(self, name, age, address, phone):
         name = name.lower().strip()
+        validation = self.validate_customer(name, age, address, phone)
+        if validation != "Valid":
+            return validation
         if any(customer[0] == name for customer in self.server.database):
             return "Customer already exists"
         self.server.database.append((name, age, address, phone))
@@ -91,6 +107,9 @@ class DatabaseRequestHandler(socketserver.BaseRequestHandler):
 
     def update_customer_age(self, name, age):
         name = name.lower().strip()
+        validation = self.validate_customer(name, age, "", "")
+        if validation != "Valid":
+            return validation
         for i, customer in enumerate(self.server.database):
             if customer[0] == name:
                 self.server.database[i] = (customer[0], age, customer[2], customer[3])
@@ -99,6 +118,9 @@ class DatabaseRequestHandler(socketserver.BaseRequestHandler):
 
     def update_customer_address(self, name, address):
         name = name.lower().strip()
+        validation = self.validate_customer(name, "", address, "")
+        if validation != "Valid":
+            return validation
         for i, customer in enumerate(self.server.database):
             if customer[0] == name:
                 self.server.database[i] = (customer[0], customer[1], address, customer[3])
@@ -107,6 +129,9 @@ class DatabaseRequestHandler(socketserver.BaseRequestHandler):
 
     def update_customer_phone(self, name, phone):
         name = name.lower().strip()
+        validation = self.validate_customer(name, "", "", phone)
+        if validation != "Valid":
+            return validation
         for i, customer in enumerate(self.server.database):
             if customer[0] == name:
                 self.server.database[i] = (customer[0], customer[1], customer[2], phone)
@@ -115,7 +140,7 @@ class DatabaseRequestHandler(socketserver.BaseRequestHandler):
 
     def print_report(self):
         report = "\n".join(f"{customer[0]}|{customer[1]}|{customer[2]}|{customer[3]}" for customer in sorted(self.server.database))
-        return f"** Database contents **\n{report}\n\n" if report else "Database is empty\n\n"
+        return f"** Database contents **\n{report}\n\nTotal records: {len(self.server.database)}\n" if report else "Database is empty\n\n"
 
 class DatabaseServer(socketserver.TCPServer):
     def __init__(self, server_address, RequestHandlerClass):

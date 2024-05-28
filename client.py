@@ -1,3 +1,4 @@
+import re
 import socket
 
 def display_menu():
@@ -21,40 +22,60 @@ def send_request(host, port, request):
         response = sock.recv(1024).decode()
     return response
 
+def get_validated_input(prompt, validation_func):
+    while True:
+        value = input(prompt).strip()
+        if validation_func(value):
+            return value
+        print("Invalid input. Please try again.")
+
+def validate_name(name):
+    return bool(name.strip())
+
+def validate_age(age):
+    return age.isdigit() and 1 <= int(age) <= 120
+
+def validate_address(address):
+    return all(c.isalnum() or c in ' .-' for c in address)
+
+def validate_phone(phone):
+    return not phone or re.match(r'^\d{3} \d{3}-\d{4}$', phone) or re.match(r'^\d{3}-\d{4}$', phone)
+
 def main(host, port):
     while True:
         choice = display_menu()
 
         if choice == '1':
-            name = input("Enter customer name to find: ").strip()
+            name = get_validated_input("Enter customer name to find: ", validate_name)
             request = f"find|{name}"
             print(send_request(host, port, request))
         elif choice == '2':
-            name = input("Enter customer name: ").strip()
-            age = input("Enter customer age: ").strip()
-            address = input("Enter customer address: ").strip()
-            phone = input("Enter customer phone: ").strip()
+            name = get_validated_input("Enter customer name: ", validate_name)
+            age = get_validated_input("Enter customer age: ", validate_age)
+            address = get_validated_input("Enter customer address: ", validate_address)
+            phone = get_validated_input("Enter customer phone: ", validate_phone)
             request = f"add|{name}|{age}|{address}|{phone}"
             print(send_request(host, port, request))
         elif choice == '3':
-            name = input("Enter customer name to delete: ").strip()
+            name = get_validated_input("Enter customer name to delete: ", validate_name)
             request = f"delete|{name}"
             print(send_request(host, port, request))
         elif choice == '4':
-            name = input("Enter customer name to update age: ").strip()
-            age = input("Enter new age: ").strip()
+            name = get_validated_input("Enter customer name to update age: ", validate_name)
+            age = get_validated_input("Enter new age: ", validate_age)
             request = f"update_age|{name}|{age}"
             print(send_request(host, port, request))
         elif choice == '5':
-            name = input("Enter customer name to update address: ").strip()
-            address = input("Enter new address: ").strip()
+            name = get_validated_input("Enter customer name to update address: ", validate_name)
+            address = get_validated_input("Enter new address: ", validate_address)
             request = f"update_address|{name}|{address}"
             print(send_request(host, port, request))
         elif choice == '6':
-            name = input("Enter customer name to update phone: ").strip()
-            phone = input("Enter new phone: ").strip()
+            name = get_validated_input("Enter customer name to update phone: ", validate_name)
+            phone = get_validated_input("Enter new phone: ", validate_phone)
             request = f"update_phone|{name}|{phone}"
             print(send_request(host, port, request))
+
         elif choice == '7':
             request = "report"
             print(send_request(host, port, request))
