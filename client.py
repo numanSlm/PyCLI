@@ -1,5 +1,6 @@
 import re
 import socket
+import os
 
 def display_menu():
     return input("\n".join([
@@ -21,6 +22,12 @@ def send_request(host, port, request):
         sock.sendall(request.encode())
         response = sock.recv(1024).decode()
     return response
+def clear_screen():
+    os.environ['TERM'] = 'xterm'  # Set TERM to 'xterm' or another appropriate terminal type
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
 
 def get_validated_input(prompt, validation_func):
     while True:
@@ -40,9 +47,9 @@ def validate_address(address):
 
 def validate_phone(phone):
     return not phone or re.match(r'^\d{3} \d{3}-\d{4}$', phone) or re.match(r'^\d{3}-\d{4}$', phone)
-
 def main(host, port):
     while True:
+        clear_screen()
         choice = display_menu()
 
         if choice == '1':
