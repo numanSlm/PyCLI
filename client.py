@@ -1,3 +1,8 @@
+# Name - Numan Salim Shaikh
+# SID - 40266934
+# Course - COMP 6411
+# Assignment 1
+
 import re
 import socket
 import os
@@ -17,17 +22,14 @@ def display_menu():
     ]))
 
 def send_request(host, port, request):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.connect((host, port))
-        sock.sendall(request.encode())
-        response = sock.recv(1024).decode()
-    return response
-def clear_screen():
-    os.environ['TERM'] = 'xterm'  # Set TERM to 'xterm' or another appropriate terminal type
-    if os.name == 'nt':
-        os.system('cls')
-    else:
-        os.system('clear')
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.connect((host, port))
+            sock.sendall(request.encode())
+            response = sock.recv(1024).decode()
+        return response
+    except (ConnectionRefusedError, ConnectionResetError):
+        return "Error: Could not connect to the server."
 
 def get_validated_input(prompt, validation_func):
     while True:
@@ -47,6 +49,10 @@ def validate_address(address):
 
 def validate_phone(phone):
     return not phone or re.match(r'^\d{3} \d{3}-\d{4}$', phone) or re.match(r'^\d{3}-\d{4}$', phone)
+
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 def main(host, port):
     while True:
         clear_screen()
@@ -82,15 +88,17 @@ def main(host, port):
             phone = get_validated_input("Enter new phone: ", validate_phone)
             request = f"update_phone|{name}|{phone}"
             print(send_request(host, port, request))
-
         elif choice == '7':
             request = "report"
             print(send_request(host, port, request))
         elif choice == '8':
-            print("Good Bye...")
+            print("Goodbye!")
             break
         else:
             print("Invalid choice. Please try again.")
+
+        input("\nPress Enter to continue...")
+        clear_screen()
 
 if __name__ == "__main__":
     HOST = "localhost"
